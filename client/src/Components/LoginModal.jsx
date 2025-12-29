@@ -1,8 +1,8 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
+import { API } from "../config/api";
 
 export default function LoginModal({ closemod }) {
-  const [credentials, setcredentials] = useState({
+  const [credentials, setCredentials] = useState({
     first_name: "",
     last_name: "",
     age: "",
@@ -10,207 +10,202 @@ export default function LoginModal({ closemod }) {
     email: "",
     password: "",
   });
-  const onchange = (e) => {
-    setcredentials({ ...credentials, [e.target.name]: e.target.value });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const onChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    setError("");
   };
-  const [loggedin, setloggedin] = useState(false);
 
-  const eventHandler = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!credentials.first_name || !credentials.last_name || !credentials.email || !credentials.password) {
+      setError("Please fill in all required fields");
+      return;
+    }
+    
+    if (credentials.password.length < 5) {
+      setError("Password must be at least 5 characters");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     try {
-      // Validate fields
-      if (!credentials.first_name || !credentials.last_name || !credentials.email || !credentials.password) {
-        alert("Please fill in all required fields");
-        return;
-      }
-      
-      if (credentials.password.length < 5) {
-        alert("Password must be at least 5 characters long");
-        return;
-      }
-
-      console.log("Sending signup request...");
-      const response = await fetch("http://localhost:3001/register/creatuser", {
+      const response = await fetch(API.signup, {
         method: "POST",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({
-          first_name: credentials.first_name,
-          last_name: credentials.last_name,
-          age: credentials.age,
-          mob: credentials.mob,
-          email: credentials.email,
-          password: credentials.password,
-        }),
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(credentials),
       });
 
-      if (!response.ok) {
-        console.error("Response not OK:", response.status, response.statusText);
-        alert(`Server error: ${response.status} ${response.statusText}`);
-        return;
-      }
-
       const json = await response.json();
-      console.log("Server response:", json);
 
       if (json.userexist) {
-        alert("User already exists. Please login instead.");
-      } 
-      else {
-        if (!json.success) {
-          alert("Signup failed. Please check your credentials.");
-        } else {
-          localStorage.setItem("authToken", json.authToken);
-          console.log("Signup successful!");
-          setloggedin(true);
-        }
+        setError("User already exists. Please sign in instead.");
+      } else if (!json.success) {
+        setError("Signup failed. Please check your details.");
+      } else {
+        localStorage.setItem("authToken", json.authToken);
+        closemod[0](false);
+        window.location.reload();
       }
     } catch (error) {
-      console.error("Signup error:", error);
-      alert("Network error. Please check your connection and try again.");
+      setError("Network error. Please try again.");
     }
+    setLoading(false);
   };
 
-  //--------------------------create wallet----------------//
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-dark-950/90 backdrop-blur-sm"
+        onClick={() => closemod[0](false)}
+      ></div>
 
-  //--------------------------create wallet----------------//
+      {/* Modal */}
+      <div className="relative w-full max-w-lg glass-card p-8 animate-scale-in">
+        {/* Close button */}
+        <button
+          onClick={() => closemod[0](false)}
+          className="absolute top-4 right-4 text-dark-400 hover:text-white transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
 
-  if (loggedin) {
-    closemod[0](false);
-  } else {
-    return (
-      <div>
-        <div className="w-[100%] fixed top-0 h-full snap-none z-50  bg-[#131722c3]">
-          {/* <div className="z-10 w-[250px] h-[150px] mt-[250px] ml-[450px] hidden sm:inline-flex absolute rounded-full bg-[#9f9c9c] blur-lg"></div> */}
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-display font-bold text-white mb-2">Create Account</h2>
+          <p className="text-dark-400">Start your crypto journey today</p>
+        </div>
 
-          {/* background div*/}
+        {/* Error message */}
+        {error && (
+          <div className="mb-6 p-4 bg-accent-red/10 border border-accent-red/20 rounded-xl text-accent-red text-sm">
+            {error}
+          </div>
+        )}
 
-          <div className="text-black bg-white rounded-md border-2 border-white w-[70%] md:w-[50%] mx-auto mt-[40px] md:mt-[200px]">
-            <button
-              onClick={() => {
-                closemod[0](false);
-              }}
-              className="font-bold ml-5 mt-3"
-            >
-              X
-            </button>
-            <div className=" ">
-              {/* <div className=" animate-pulse rounded-full bg-[#b3b3b3] blur-lg absolute hidden mt-[20px] ml-[10px] sm:inline-flex w-[300px] h-[200px] z-10"></div> */}
-              <div className="">
-                <h1 className=" text-center p-1 font-bold text-[18px] sm:text-[25px] z-50 ">
-                  Welcome to our Cryptofolio!
-                </h1>
-
-                <form className=" grid grid-cols-1 md:grid-cols-2 p-3">
-                  <div className=" flex p-2 justify-between m-1 flex-wrap z-50">
-                    <label for="first_name" className="font-semibold">
-                      First Name
-                    </label>
-                    <div>
-                      <input
-                        type="text"
-                        id="first_name"
-                        name="first_name"
-                        value={credentials.first_name}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf]"
-                      />
-                    </div>
-                  </div>
-                  <div className=" flex p-2 justify-between m-1 flex-wrap z-50">
-                    <label for="last_name" className="font-semibold">
-                      Last Name
-                    </label>
-                    <div>
-                      <input
-                        type="text"
-                        id="last_name"
-                        name="last_name"
-                        value={credentials.last_name}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf]"
-                      />
-                    </div>
-                  </div>
-                  <div className=" flex p-2 justify-between m-1 flex-wrap  z-50">
-                    <label for="age" className="font-semibold">
-                      Age
-                    </label>
-                    <div>
-                      <input
-                        type="number"
-                        id="age"
-                        name="age"
-                        value={credentials.age}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf]"
-                      />
-                    </div>
-                  </div>
-                  <div className="  flex p-2 justify-between m-1 flex-wrap">
-                    <label for="mob" className="font-semibold">
-                      Mobile number
-                    </label>
-                    <div>
-                      <input
-                        type="number"
-                        id="mob"
-                        name="mob"
-                        value={credentials.mob}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf]"
-                      />
-                    </div>
-                  </div>
-                  <div className="  flex p-2 justify-between m-1 flex-wrap">
-                    <label for="email" className="font-semibold">
-                      Email
-                    </label>
-                    <div>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={credentials.email}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf]"
-                      />
-                    </div>
-                  </div>
-                  <div className="  flex p-2 justify-between m-1 flex-wrap">
-                    <label for="password" className="font-semibold">
-                      Password
-                    </label>
-                    <div>
-                      <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        value={credentials.password}
-                        onChange={onchange}
-                        className="text-black bg-[#cfcfcf] "
-                      />
-                    </div>
-                  </div>
-                </form>
-                <div className="text-center mx-auto font-semibold">
-                  <button
-                    onClick={() => {
-                      closemod[1](true);
-                      closemod[0](false);
-                    }}
-                  >
-                    Already a user...?
-                  </button>
-                </div>
-                <div className="text-center mx-auto font-semibold m-3 bg-[#131722] rounded-md text-white w-[100px] p-1 hover:bg-[#414141]">
-                  <button onClick={eventHandler}>Sign Up</button>
-                </div>
-              </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">First Name *</label>
+              <input
+                type="text"
+                name="first_name"
+                value={credentials.first_name}
+                onChange={onChange}
+                className="input"
+                placeholder="John"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">Last Name *</label>
+              <input
+                type="text"
+                name="last_name"
+                value={credentials.last_name}
+                onChange={onChange}
+                className="input"
+                placeholder="Doe"
+              />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">Age</label>
+              <input
+                type="number"
+                name="age"
+                value={credentials.age}
+                onChange={onChange}
+                className="input"
+                placeholder="25"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-300 mb-2">Mobile</label>
+              <input
+                type="tel"
+                name="mob"
+                value={credentials.mob}
+                onChange={onChange}
+                className="input"
+                placeholder="+91 1234567890"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-dark-300 mb-2">Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={credentials.email}
+              onChange={onChange}
+              className="input"
+              placeholder="john@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-dark-300 mb-2">Password *</label>
+            <input
+              type="password"
+              name="password"
+              value={credentials.password}
+              onChange={onChange}
+              className="input"
+              placeholder="••••••••"
+            />
+            <p className="text-dark-500 text-xs mt-1">Minimum 5 characters</p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary w-full py-4 mt-6"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Creating Account...
+              </span>
+            ) : (
+              "Create Account"
+            )}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              closemod[1](true);
+              closemod[0](false);
+            }}
+            className="text-dark-400 hover:text-primary-400 transition-colors text-sm"
+          >
+            Already have an account? <span className="font-medium">Sign In</span>
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }

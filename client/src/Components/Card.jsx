@@ -1,74 +1,116 @@
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import React, { useState } from "react";
-import { useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function Card() {
-  const url =
-    "https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&order=market_cap_desc&per_page=100&page=1&sparkline=true";
-  const [info, setinfo] = useState([]);
+  const [coins, setCoins] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(url).then((response) => {
-      setinfo(response.data);
-    });
+    const fetchCoins = async () => {
+      try {
+        const response = await axios.get(
+          "https://api.coingecko.com/api/v3/coins/markets",
+          {
+            params: {
+              vs_currency: "inr",
+              order: "market_cap_desc",
+              per_page: 8,
+              page: 1,
+              sparkline: true,
+            },
+          }
+        );
+        setCoins(response.data);
+      } catch (error) {
+        console.error("Error fetching coins:", error);
+      }
+      setLoading(false);
+    };
+    fetchCoins();
   }, []);
-  // console.log(open2[0])
-  // console.log(open2[1])
-  console.log(info);
 
-  if (info.length === 0) {
-    return <div>loading</div>;
-  } else {
+  const formatPrice = (price) => {
+    if (price >= 100000) {
+      return `₹${(price / 100000).toFixed(2)}L`;
+    }
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: price < 1 ? 4 : 2,
+      maximumFractionDigits: price < 1 ? 6 : 2,
+    }).format(price);
+  };
+
+  if (loading) {
     return (
-      <div className="bg-[#1d2230]   mx-auto  text-white p-7">
-        <div className="grid grid-cols-1 sm:grid-cols-2  ">
-          <div className="font-bold text-[20px] text-center mx-auto sm:text-left xl:text-[29px] w-[80%] text-white p-4">
-            Explore top Crypto's Like Bitcoin Ethereum and Dogecoin
-            <p className=" text-[#c0c0c0]  pt-5 hidden sm:inline-flex font-normal text-[15px] mx-auto  sm:text-[15px] md:text-[15px] lg:text-[15px] xl:text-[15px]">
-              buying and selling cryptocurrencies on a cryptocurrency exchange
-              or trading platform in order to make a profit from the price
-              fluctuations of cryptocurrencies.
-            </p>
-            <p className=" text-[#d2d1d1]  pt-5 hidden sm:inline-flex font-normal text-[15px] mx-auto  sm:text-[15px] md:text-[15px] lg:text-[15px] xl:text-[15px]">
-              It's important to keep in mind that crypto trading requires
-              discipline and a long-term strategy, as well as the ability to
-              manage risk effectively. It's also recommended to start with a
-              small investment and gradually increase your exposure as you gain
-              experience and knowledge.
-            </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="card p-5 animate-pulse">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-dark-700 rounded-full"></div>
+              <div>
+                <div className="h-4 w-20 bg-dark-700 rounded mb-2"></div>
+                <div className="h-3 w-12 bg-dark-700 rounded"></div>
+              </div>
+            </div>
+            <div className="h-6 w-24 bg-dark-700 rounded mb-2"></div>
+            <div className="h-4 w-16 bg-dark-700 rounded"></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mx-auto">
-            {info.map((value, key) => {
-              if (key < 6) {
-                return (
-                  <div>
-                    <Link
-                      to={{
-                        pathname: "/coin",
-                        hash: `${value.name}`,
-                      }}
-                      state={{ value }}
-                    >
-                      <div className="rounded-md shadow-md p-5 shadow-[#00000066]  m-3 w-[180px] border-t-2 border-[#0000001c]">
-                        <div className=" mx-auto w-[100px] h-[100px] ">
-                          <img src={value.image} alt=""></img>
-                        </div>
-                        <div className="p-1 text-center font-medium">
-                          <h3>Name- {value.name}</h3>
-                          <p>Value- {value.current_price}</p>
-                          <h3>Up- {value.high_24h}</h3>
-                          <h3>Down- {value.low_24h}</h3>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              }
-            })}
-          </div>
-        </div>
+        ))}
       </div>
     );
   }
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {coins.map((coin, index) => (
+        <Link
+          key={coin.id}
+          to={{ pathname: "/coin", hash: coin.name }}
+          state={{ value: coin }}
+          className="card p-5 hover:border-primary-500/30 hover:shadow-glow-sm transition-all duration-300 group animate-fade-in"
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <img
+              src={coin.image}
+              alt={coin.name}
+              className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <h3 className="font-semibold text-white text-sm group-hover:text-primary-400 transition-colors truncate">
+                {coin.name}
+              </h3>
+              <p className="text-dark-500 text-xs uppercase">{coin.symbol}</p>
+            </div>
+          </div>
+
+          {/* Price */}
+          <div className="text-lg font-display font-bold text-white mb-1">
+            {formatPrice(coin.current_price)}
+          </div>
+          <div
+            className={`flex items-center gap-1 text-sm font-medium ${
+              coin.price_change_percentage_24h >= 0
+                ? "text-secondary-400"
+                : "text-accent-red"
+            }`}
+          >
+            {coin.price_change_percentage_24h >= 0 ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+              </svg>
+            )}
+            {Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
 }

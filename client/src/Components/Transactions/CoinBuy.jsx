@@ -1,352 +1,238 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { API } from "../../config/api";
 
 export default function CoinBuy() {
   const { state } = useLocation();
-  const navigate = useNavigate();
-
-  console.log("hello");
-  // console.log(state.data);
-
-  const [data, setdata] = useState();
-  const [currprise, setcurrprise] = useState();
-
-  useEffect(() => {
-    setdata(state.data);
-  }, [data]);
-
-  const [id, setid] = useState();
-  const getid = async () => {
-    const response = await fetch(
-      "https://cryptofolio-backstack-aiwo.onrender.com/dashboard/dashboard",
-      {
-        method: "POST",
-        body: JSON.stringify({ Token: localStorage.authToken }),
-        mode: "cors",
-        headers: {
-          "Content-type": "application/json",
-        },
-
-        header: "Access-Control-Allow-Origin: *",
-      }
-    );
-    let json = await response.json();
-    console.log("response we get");
-    console.log(json);
-    setid(json.id);
-  };
-  // useEffect(async () => {
-  //   getid();
-  // }, []);
-
-  useEffect(() => {
-    setcurrprise(
-      ((`${state.data.current_price}` / 100) * 70).toLocaleString("en-IN", {
-        maximumFractionDigits: 2,
-        style: "currency",
-        currency: "INR",
-      })
-    );
-
-    console.log(currprise);
-    console.log(data);
-  }, []);
-
-  //-----------------transactions--------------------//
-
-  const login = localStorage.getItem("authToken");
-  console.log(login);
-
-  const [allTransaction, setallTransaction] = useState([]);
-  useEffect(() => {
-    if (login) {
-      getallTransaction();
-      getid();
-    } else {
-    }
-  }, []);
-  const getallTransaction = async () => {
-    await axios({
-      method: "POST",
-      url: "https://cryptofolio-backstack-aiwo.onrender.com/wallet/getwalletTransaction",
-      data: {
-        login: login,
-      },
-      headers: {
-        "Content-type": "application/json",
-      },
-    }).then((res) => {
-      console.log("transactions");
-      console.log(res.data);
-
-      setallTransaction(res.data);
-    });
-  };
-  console.log(allTransaction);
-
-  const [currBalance, setcurrBalance] = useState();
-
-  const getamount = async () => {
-    await axios({
-      method: "POST",
-      url: "https://cryptofolio-backstack-aiwo.onrender.com/wallet/getwalletAmount",
-      data: {
-        login: login,
-      },
-      headers: {
-        "Content-type": "application/json",
-      },
-    }).then((res) => {
-      console.log("current balance");
-
-      setcurrBalance(res.data[0].Amount);
-    });
-  };
-  console.log(currBalance);
-
-  const getusertransaction_byQuantity = async () => {
-    if (Number(Quantity) <= 0) {
-      alert("enter amount");
-    } else {
-      console.log("HIIIIII");
-
-      await getamount();
-
-      let object = {
-        img: state.data.image,
-        CoinId: state.data.id,
-        CoinName: state.data.name,
-        Quantity: Quantity,
-        Amount: (`${state.data.current_price}` / 100) * 70 * Quantity,
-        Date: new Date(),
-        Prise: (`${state.data.current_price}` / 100) * 70,
-        type: "Buy",
-      };
-
-      allTransaction.push(object);
-      console.log(allTransaction);
-
-      console.log((`${state.data.current_price}` / 100) * 70 * Quantity);
-      console.log(currBalance);
-
-      const response = await axios({
-        method: "POST",
-        url: "https://cryptofolio-backstack-aiwo.onrender.com/transactions/transactions",
-        data: {
-          Quantity: Quantity,
-          Amount: (`${state.data.current_price}` / 100) * 70 * Quantity,
-          login: login,
-          CoinName: data.name,
-          Transaction: allTransaction,
-        },
-        headers: {
-          "Content-type": "application/json",
-        },
-      }).then((res) => {
-        console.log("response heuhfiehfal--------------------");
-        console.log(res.data);
-        if (res.data === "NO") {
-          alert("not enough balance");
-        }
-        if (res.data === "YES") {
-          fun();
-          // navigate("/market");
-        }
-      });
-    }
-  };
-  const fun = () => {
-    window.history.go(-1);
-  };
-
-  const getusertransaction_byAmount = async () => {
-    await getamount();
-
-    console.log((`${state.data.current_price}` / 100) * 70 * Quantity);
-    console.log(currBalance);
-
-    let object = {
-      img: state.data.image,
-      CoinId: state.data.id,
-      CoinName: state.data.name,
-      Quantity:
-        Amount_for_amount / ((`${state.data.current_price}` / 100) * 70),
-      Amount: Amount_for_amount,
-      Date: new Date(),
-      Prise: (`${state.data.current_price}` / 100) * 70,
-      type: "Buy",
-    };
-
-    allTransaction.push(object);
-
-    const response = await axios({
-      method: "POST",
-      url: "https://cryptofolio-backstack-aiwo.onrender.com/transactions/transactions",
-      data: {
-        Quantity:
-          Amount_for_amount / ((`${state.data.current_price}` / 100) * 70),
-        Amount: Amount_for_amount,
-        login: login,
-        CoinName: data.name,
-        Transaction: allTransaction,
-      },
-      headers: {
-        "Content-type": "application/json",
-      },
-    }).then((res) => {
-      console.log("response");
-      console.log(res.data);
-      if (res.data === "NO") {
-        alert("not enough balance");
-      }
-      if (res.data === "YES") {
-        fun();
-        // navigate("/market");
-      }
-    });
-  };
-
-  //-----------------transactions--------------------//
-
-  //----------------input value by quantity--------------//
-
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [Quantity, setQuantity] = useState("");
-  const [Amount, setAmount] = useState("");
-
-  useEffect(() => {
-    if (Quantity.length === 0) {
-      setAmount("");
-    }
-  }, [Quantity, Amount]);
-
-  const onchangeQuantity = (e) => {
-    setQuantity(e.target.value);
-  };
-
-  useEffect(() => {
-    setAmount(
-      ((`${state.data.current_price}` / 100) * 70 * Quantity).toLocaleString(
-        "en-IN",
-        {
-          maximumFractionDigits: 2,
-          style: "currency",
-          currency: "INR",
-        }
-      )
-    );
-  }, [Quantity]);
-
-  //----------------input value by quantity --------------//
-
-  //----------------input value by amount--------------//
-
-  const [Quantity_for_amount, setQuantity_for_amount] = useState("");
   const [Amount_for_amount, setAmount_for_amount] = useState("");
 
-  useEffect(() => {
-    if (Amount_for_amount.length === 0) {
-      setAmount_for_amount("");
-    }
-  }, [Quantity, Amount]);
+  const login = localStorage.getItem("authToken");
 
-  const onchangeAmount = (e) => {
-    setAmount_for_amount(e.target.value);
+  useEffect(() => {
+    if (state?.data) {
+      setData(state.data);
+    }
+  }, [state]);
+
+  const pricePerCoin = data ? (data.current_price / 100) * 70 : 0;
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price);
   };
 
-  useEffect(() => {
-    setQuantity_for_amount(
-      Amount_for_amount / ((`${state.data.current_price}` / 100) * 70)
-    );
-  }, [Amount_for_amount]);
+  const calculatedAmount = Quantity ? pricePerCoin * Number(Quantity) : 0;
+  const calculatedQuantity = Amount_for_amount ? Number(Amount_for_amount) / pricePerCoin : 0;
 
-  //----------------input value amount --------------//
+  const handleBuyByQuantity = async () => {
+    if (Number(Quantity) <= 0) {
+      alert("Please enter a valid quantity");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(API.tradesBuy, {
+        login,
+        coinId: data.id,
+        coinName: data.name,
+        symbol: data.symbol,
+        image: data.image,
+        quantity: Number(Quantity),
+        pricePerCoin,
+      });
+
+      if (response.data.success) {
+        alert(`Successfully bought ${Quantity} ${data.name}!`);
+    window.history.go(-1);
+      } else {
+        alert(response.data.error || "Purchase failed");
+      }
+    } catch (error) {
+      if (error.response?.data?.error === "Insufficient balance") {
+        alert(`Not enough balance. Required: ${formatPrice(error.response.data.required)}, Available: ${formatPrice(error.response.data.available)}`);
+      } else {
+        alert(error.response?.data?.error || "Purchase failed");
+      }
+    }
+    setLoading(false);
+  };
+
+  const handleBuyByAmount = async () => {
+    if (Number(Amount_for_amount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(API.tradesBuy, {
+        login,
+        coinId: data.id,
+        coinName: data.name,
+        symbol: data.symbol,
+        image: data.image,
+        quantity: calculatedQuantity,
+        pricePerCoin,
+      });
+
+      if (response.data.success) {
+        alert(`Successfully bought ${calculatedQuantity.toFixed(6)} ${data.name}!`);
+        window.history.go(-1);
+      } else {
+        alert(response.data.error || "Purchase failed");
+      }
+    } catch (error) {
+      if (error.response?.data?.error === "Insufficient balance") {
+        alert(`Not enough balance. Required: ${formatPrice(error.response.data.required)}, Available: ${formatPrice(error.response.data.available)}`);
+      } else {
+        alert(error.response?.data?.error || "Purchase failed");
+      }
+    }
+    setLoading(false);
+  };
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div className="text-dark-400">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="m-5 ">
-      {/* <div className="w-[300px] z-10 grad_bg blur-[220px]  right-[90px] h-[300px] absolute border-2 rounded-full"></div> */}
+    <div className="min-h-screen bg-dark-950 pt-24 pb-12">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Back button */}
+        <button 
+          onClick={() => window.history.go(-1)}
+          className="flex items-center gap-2 text-dark-400 hover:text-white mb-8 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to coin
+        </button>
 
-      <div className=" z-30 w-[80%] mx-auto p-5 bg-[#1d2230] rounded-md">
-        <div className="font-bold text-white text-center text-[20px] md:text-[22px] mb-12">
-          Confirm Payment
-        </div>
-        <div className=" m-5 grid grid-cols-1 md:grid-cols-2  ">
-          <div className="p-3 mx-auto bg-[#171b26] rounded-lg text-white pt-6 md:mr-4 mb-4 md:w-[80%]">
-            <div className="font-semibold text-white text-center text-[18px] md:text-[20px] mb-4">
-              {data?.name}
+        <div className="card p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-500/20 text-secondary-400 rounded-full text-sm font-medium mb-4">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Buy Order
             </div>
-            <div className=" w-[100px] h-[100px] mx-auto ">
-              <img src={data?.image} alt=""></img>
+            <h1 className="text-2xl font-display font-bold text-white">
+              Buy {data.name}
+            </h1>
+          </div>
+
+          {/* Coin Info */}
+          <div className="glass-card p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <img src={data.image} alt={data.name} className="w-16 h-16 rounded-full" />
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{data.name}</h2>
+                  <p className="text-dark-400 uppercase">{data.symbol}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-dark-400 text-sm mb-1">Current Price</p>
+                <p className="text-2xl font-display font-bold text-white">
+                  {formatPrice(pricePerCoin)}
+                </p>
             </div>
-            <div className="font-semibold text-white text-center text-[16px] md:text-[18px] m-4">
-              Current Prise: {currprise}
             </div>
           </div>
 
-          <div className=" grid grid-cols-1 md:grid-cols-2 md:space-x-3 ">
-            <div className="p-3 mb-4 mx-auto bg-[#171b26] rounded-lg text-white pt-6">
-              <div className="text-center font-medium mb-5 text-[17px]">
-                Buy by Qantity
-              </div>
-              <div className="grid grid-cols-1  m-3">
-                <label for="" className="font-medium ">
-                  Quantity
-                </label>
+          {/* Buy Options */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Buy by Quantity */}
+            <div className="bg-dark-900/50 rounded-2xl p-6 border border-dark-700/50">
+              <h3 className="text-lg font-semibold text-white mb-4">Buy by Quantity</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-dark-400 mb-2">Quantity</label>
                 <input
-                  type="text"
-                  id=""
-                  name=""
+                    type="number"
                   value={Quantity}
-                  onChange={onchangeQuantity}
-                  className="text-black p-[1px] m-2 text-center"
-                  placeholder="enter quantity "
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="0.00"
+                    className="input text-center text-xl font-mono"
                 />
               </div>
-              <div className="grid grid-cols-1  m-3">
-                <div className="font-medium ">Amount: </div>
-                <div className="">{Amount}</div>
+
+                <div className="p-4 bg-dark-800/50 rounded-xl">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-dark-400">Total Cost</span>
+                    <span className="text-white font-medium tabular-nums">
+                      {formatPrice(calculatedAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleBuyByQuantity}
+                  disabled={loading || !Quantity}
+                  className="btn-primary w-full py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700"
+                >
+                  {loading ? "Processing..." : `Buy ${data.symbol?.toUpperCase()}`}
+                </button>
               </div>
-              <button
-                onClick={getusertransaction_byQuantity}
-                className="bg-[#209fe4]  w-[100%]
-               p-1 mt-6  rounded-md font-semibold text-[12px] md:text-[15px] mb-4"
-              >
-                Buy
-              </button>
             </div>
 
-            <div className="p-3 mb-4 mx-auto bg-[#171b26] rounded-lg text-white pt-6">
-              <div className="text-center font-medium text-[17px]">
-                Buy by Amount
-              </div>
-              <div className="grid grid-cols-1  m-3">
-                <label for="" className="font-medium ">
-                  Amount
-                </label>
+            {/* Buy by Amount */}
+            <div className="bg-dark-900/50 rounded-2xl p-6 border border-dark-700/50">
+              <h3 className="text-lg font-semibold text-white mb-4">Buy by Amount</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-dark-400 mb-2">Amount (₹)</label>
                 <input
-                  type="Number"
-                  id=""
-                  name=""
+                    type="number"
                   value={Amount_for_amount}
-                  onChange={onchangeAmount}
-                  className="text-black p-[1px] m-2 text-center"
-                  placeholder="enter amount "
+                    onChange={(e) => setAmount_for_amount(e.target.value)}
+                    placeholder="0.00"
+                    className="input text-center text-xl font-mono"
                 />
               </div>
-              <div className="grid grid-cols-1 m-3 md:mt-5">
-                <div className="font-medium ">Quantity: </div>
-                <div className="text-[13px] md:text-[17px]">
-                  {Quantity_for_amount}
+
+                <div className="p-4 bg-dark-800/50 rounded-xl">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-dark-400">You'll Receive</span>
+                    <span className="text-white font-medium tabular-nums">
+                      {calculatedQuantity.toFixed(6)} {data.symbol?.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
+
+                <button
+                  onClick={handleBuyByAmount}
+                  disabled={loading || !Amount_for_amount}
+                  className="btn-primary w-full py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700"
+                >
+                  {loading ? "Processing..." : `Buy ${data.symbol?.toUpperCase()}`}
+                </button>
               </div>
-              <button
-                onClick={getusertransaction_byAmount}
-                className="bg-[#209fe4]  w-[100%]
-               p-1 mt-1  rounded-md font-semibold text-[12px] md:text-[15px]"
-              >
-                Buy
-              </button>
             </div>
+          </div>
+
+          {/* Info */}
+          <div className="mt-6 p-4 bg-primary-500/10 border border-primary-500/20 rounded-xl">
+            <p className="text-primary-300 text-sm">
+              💡 This is a demo platform. Trades are simulated using virtual funds.
+            </p>
           </div>
         </div>
       </div>
