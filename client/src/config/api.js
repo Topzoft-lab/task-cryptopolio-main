@@ -6,7 +6,7 @@ const isDevelopment = process.env.NODE_ENV === 'development' ||
 const LOCAL_API = 'http://localhost:4000';
 
 // Production server (Render)
-const PROD_API = 'https://cryptofolio-backstack-aiwo.onrender.com';
+const PROD_API = 'https://task-cryptopolio-main.onrender.com';
 
 // Use local API in development, production API otherwise
 export const API_BASE_URL = isDevelopment ? LOCAL_API : PROD_API;
